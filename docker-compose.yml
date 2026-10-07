@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dart_be}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dart_be}
+      POSTGRES_DB: ${POSTGRES_DB:-dart_be}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data      # persists users across restarts
+      - ./db/init:/docker-entrypoint-initdb.d:ro  # schema + seed, first run only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dart_be}:${POSTGRES_PASSWORD:-dart_be}@db:5432/${POSTGRES_DB:-dart_be}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-dart_be}
+      JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  pgdata:

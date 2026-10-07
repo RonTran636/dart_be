@@ -1,0 +1,8 @@
+include: package:dart_frog_lint/recommended.yaml
+
+linter:
+  rules:
+    # Clean architecture uses single-method interfaces (repositories, services).
+    one_member_abstracts: false
+    # Application code, not a published package.
+    public_member_api_docs: false
